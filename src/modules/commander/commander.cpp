@@ -1243,6 +1243,7 @@ int commander_thread_main(int argc, char *argv[])
 		orb_check(safety_sub, &updated);
 
 		if (updated) {
+			bool previous_safety_off = safety.safety_off;
 			orb_copy(ORB_ID(safety), safety_sub, &safety);
 
 			/* disarm if safety is now on and still armed */
@@ -1255,6 +1256,19 @@ int commander_thread_main(int argc, char *argv[])
 					mavlink_log_info(mavlink_fd, "DISARMED by safety switch");
 					arming_state_changed = true;
 				}
+			}
+
+			//Notify the user if the status of the safety switch changes
+			if(safety.safety_switch_available && previous_safety_off != safety.safety_off) {
+
+				if(safety.safety_off) {
+					set_tune(TONE_NOTIFY_POSITIVE_TUNE);
+				}
+				else {
+					tune_neutral(true);
+				}
+
+				status_changed = true;
 			}
 		}
 
@@ -1846,7 +1860,8 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 
-		hrt_abstime t1 = hrt_absolute_time();
+		//Get current timestamp
+		const hrt_abstime now = hrt_absolute_time();
 
 		/* print new state */
 		if (arming_state_changed) {
@@ -1857,7 +1872,8 @@ int commander_thread_main(int argc, char *argv[])
 			if (armed.armed && !was_armed && hrt_absolute_time() > start_time + 2000000 && status.condition_global_position_valid &&
 			    (global_position.eph < eph_threshold) && (global_position.epv < epv_threshold)) {
 
-				// TODO remove code duplication
+				// TODO remove code duplication (setting home is also done somewhere else in this file)
+				home.timestamp = now;
 				home.lat = global_position.lat;
 				home.lon = global_position.lon;
 				home.alt = global_position.alt;
@@ -1918,13 +1934,13 @@ int commander_thread_main(int argc, char *argv[])
 		/* publish states (armed, control mode, vehicle status) at least with 5 Hz */
 		if (counter % (200000 / COMMANDER_MONITORING_INTERVAL) == 0 || status_changed) {
 			set_control_mode();
-			control_mode.timestamp = t1;
+			control_mode.timestamp = now;
 			orb_publish(ORB_ID(vehicle_control_mode), control_mode_pub, &control_mode);
 
-			status.timestamp = t1;
+			status.timestamp = now;
 			orb_publish(ORB_ID(vehicle_status), status_pub, &status);
 
-			armed.timestamp = t1;
+			armed.timestamp = now;
 			orb_publish(ORB_ID(actuator_armed), armed_pub, &armed);
 		}
 
@@ -1949,6 +1965,12 @@ int commander_thread_main(int argc, char *argv[])
 
 		/* reset arm_tune_played when disarmed */
 		if (!armed.armed || (safety.safety_switch_available && !safety.safety_off)) {
+
+			//Notify the user that it is safe to approach the vehicle
+			if(arm_tune_played) {
+				tune_neutral(true);
+			}
+
 			arm_tune_played = false;
 		}
 
