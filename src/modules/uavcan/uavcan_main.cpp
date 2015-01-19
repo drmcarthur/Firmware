@@ -209,13 +209,13 @@ void UavcanNode::fill_node_info()
 	/* hardware version */
 	uavcan::protocol::HardwareVersion hwver;
 
-	if (!std::strncmp(HW_ARCH, "PX4FMU_V1", 9)) {
-		hwver.major = 1;
-	} else if (!std::strncmp(HW_ARCH, "PX4FMU_V2", 9)) {
-		hwver.major = 2;
-	} else {
-		; // All other values of HW_ARCH resolve to zero
-	}
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+	hwver.major = 1;
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+	hwver.major = 2;
+#else
+	// All other values of HW_ARCH resolve to zero
+#endif
 
 	uint8_t udid[12] = {};  // Someone seems to love magic numbers
 	get_board_serial(udid);
