@@ -403,7 +403,13 @@ mixer_handle_text(const void *buffer, size_t length)
 
 		/* process the text buffer, adding new mixers as their descriptions can be parsed */
 		unsigned resid = mixer_text_length;
-		mixer_group.load_from_buf(&mixer_text[0], resid);
+
+		{
+			int ret = mixer_group.load_from_buf(&mixer_text[0], resid);
+			if (ret != 0) {
+				return 1;
+			}
+		}
 
 		/* if anything was parsed */
 		if (resid != mixer_text_length) {
