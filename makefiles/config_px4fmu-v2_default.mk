@@ -74,6 +74,12 @@ MODULES		+= modules/uavcan
 MODULES 	+= modules/land_detector
 
 #
+# Custom apps
+#
+MODULES		+= modules/my_custom_app
+MODULES		+= modules/io_test
+
+#
 # Estimation modules (EKF/ SO3 / other filters)
 #
 MODULES		+= modules/attitude_estimator_ekf

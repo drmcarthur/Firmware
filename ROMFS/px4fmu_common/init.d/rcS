@@ -643,3 +643,6 @@ fi
 # There is no further processing, so we can free some RAM
 # XXX potentially unset all script variables.
 unset TUNE_ERR
+
+# TESTING -- REMOVE -- DEBUG
+io_test

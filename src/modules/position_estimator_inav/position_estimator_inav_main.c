@@ -721,8 +721,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 				}
 
 				if (gps_valid) {
-					double lat = gps.lat * 1e-7;
-					double lon = gps.lon * 1e-7;
+					double lat = gps.lat * 1e-9; // Changed from 7 (so we have ~mm accuracy from vicon)
+					double lon = gps.lon * 1e-9; // Changed from 7
 					float alt = gps.alt * 1e-3;
 
 					/* initialize reference position if needed */

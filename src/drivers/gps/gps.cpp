@@ -292,7 +292,7 @@ GPS::task_main()
 	while (!_task_should_exit) {
 
 		if (_fake_gps) {
-
+			/*
 			_report_gps_pos.timestamp_position = hrt_absolute_time();
 			_report_gps_pos.lat = (int32_t)47.378301e7f;
 			_report_gps_pos.lon = (int32_t)8.538777e7f;
@@ -321,7 +321,7 @@ GPS::task_main()
 					_report_gps_pos_pub = orb_advertise(ORB_ID(vehicle_gps_position), &_report_gps_pos);
 				}
 			}
-
+			*/
 			usleep(2e5);
 
 		} else {
