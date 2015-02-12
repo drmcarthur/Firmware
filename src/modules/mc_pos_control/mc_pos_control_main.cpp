@@ -64,6 +64,7 @@
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/vicon_local_position.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_global_velocity_setpoint.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
@@ -119,6 +120,7 @@ private:
 	int		_manual_sub;			/**< notification of manual control updates */
 	int		_arming_sub;			/**< arming status of outputs */
 	int		_local_pos_sub;			/**< vehicle local position */
+	int		_vicon_position_sub;		/**< vehicle vicon position */
 	int		_pos_sp_triplet_sub;	/**< position setpoint triplet */
 	int		_local_pos_sp_sub;		/**< offboard local position setpoint */
 	int		_global_vel_sp_sub;		/**< offboard global velocity setpoint */
@@ -286,6 +288,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	_manual_sub(-1),
 	_arming_sub(-1),
 	_local_pos_sub(-1),
+	_vicon_position_sub(-1),
 	_pos_sp_triplet_sub(-1),
 	_global_vel_sp_sub(-1),
 
@@ -475,6 +478,12 @@ MulticopterPositionControl::poll_subscriptions()
 
 	if (updated) {
 		orb_copy(ORB_ID(vehicle_local_position), _local_pos_sub, &_local_pos);
+	}
+
+	orb_check(_vicon_position_sub, &updated);
+
+	if (updated) {
+		orb_copy(ORB_ID(vehicle_local_position), _vicon_position_sub, &_local_pos);
 	}
 }
 
@@ -878,6 +887,7 @@ MulticopterPositionControl::task_main()
 	_manual_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 	_arming_sub = orb_subscribe(ORB_ID(actuator_armed));
 	_local_pos_sub = orb_subscribe(ORB_ID(vehicle_local_position));
+	_vicon_position_sub = orb_subscribe(ORB_ID(vicon_local_position));
 	_pos_sp_triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
 	_local_pos_sp_sub = orb_subscribe(ORB_ID(vehicle_local_position_setpoint));
 	_global_vel_sp_sub = orb_subscribe(ORB_ID(vehicle_global_velocity_setpoint));
@@ -948,13 +958,20 @@ MulticopterPositionControl::task_main()
 		    _control_mode.flag_control_climb_rate_enabled ||
 		    _control_mode.flag_control_velocity_enabled) {
 
-			_pos(0) = _local_pos.x;
-			_pos(1) = _local_pos.y;
-			_pos(2) = _local_pos.z;
+			if(viconValid)
+			{
 
-			_vel(0) = _local_pos.vx;
-			_vel(1) = _local_pos.vy;
-			_vel(2) = _local_pos.vz;
+			}
+			else
+			{
+				_pos(0) = _local_pos.x;
+				_pos(1) = _local_pos.y;
+				_pos(2) = _local_pos.z;
+
+				_vel(0) = _local_pos.vx;
+				_vel(1) = _local_pos.vy;
+				_vel(2) = _local_pos.vz;
+			}
 
 			_vel_ff.zero();
 			_sp_move_rate.zero();
