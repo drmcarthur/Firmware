@@ -64,7 +64,7 @@
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/vehicle_local_position.h>
-#include <uORB/topics/vicon_local_position.h>
+#include <uORB/topics/vehicle_vicon_position.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_global_velocity_setpoint.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
@@ -120,7 +120,7 @@ private:
 	int		_manual_sub;			/**< notification of manual control updates */
 	int		_arming_sub;			/**< arming status of outputs */
 	int		_local_pos_sub;			/**< vehicle local position */
-	int		_vicon_position_sub;		/**< vehicle vicon position */
+	int		_vicon_position_sub;	/**< vehicle vicon position */
 	int		_pos_sp_triplet_sub;	/**< position setpoint triplet */
 	int		_local_pos_sp_sub;		/**< offboard local position setpoint */
 	int		_global_vel_sp_sub;		/**< offboard global velocity setpoint */
@@ -135,6 +135,7 @@ private:
 	struct vehicle_control_mode_s			_control_mode;	/**< vehicle control mode */
 	struct actuator_armed_s				_arming;		/**< actuator arming status */
 	struct vehicle_local_position_s			_local_pos;		/**< vehicle local position */
+	struct vehicle_vicon_position_s			_vicon_pos;		/**< vicon local position */
 	struct position_setpoint_triplet_s		_pos_sp_triplet;	/**< vehicle global position setpoint triplet */
 	struct vehicle_local_position_setpoint_s	_local_pos_sp;		/**< vehicle local position setpoint */
 	struct vehicle_global_velocity_setpoint_s	_global_vel_sp;	/**< vehicle global velocity setpoint */
@@ -310,6 +311,7 @@ MulticopterPositionControl::MulticopterPositionControl() :
 	memset(&_control_mode, 0, sizeof(_control_mode));
 	memset(&_arming, 0, sizeof(_arming));
 	memset(&_local_pos, 0, sizeof(_local_pos));
+	memset(&_vicon_pos, 0, sizeof(_vicon_pos));
 	memset(&_pos_sp_triplet, 0, sizeof(_pos_sp_triplet));
 	memset(&_local_pos_sp, 0, sizeof(_local_pos_sp));
 	memset(&_global_vel_sp, 0, sizeof(_global_vel_sp));
@@ -482,8 +484,15 @@ MulticopterPositionControl::poll_subscriptions()
 
 	orb_check(_vicon_position_sub, &updated);
 
+	// Substitute in Vicon data (if exists)
 	if (updated) {
-		orb_copy(ORB_ID(vehicle_local_position), _vicon_position_sub, &_local_pos);
+		orb_copy(ORB_ID(vehicle_vicon_position), _vicon_position_sub, &_vicon_pos);
+		_local_pos.x = _vicon_pos.x;
+		_local_pos.y = _vicon_pos.y;
+		_local_pos.z = _vicon_pos.z;
+		_local_pos.yaw = _vicon_pos.yaw;
+		_local_pos.xy_valid = true;			/**< true if x and y are valid */
+		_local_pos.z_valid  = true;			/**< true if z is valid */
 	}
 }
 
@@ -544,7 +553,8 @@ MulticopterPositionControl::reset_pos_sp()
 				- _params.vel_ff(0) * _sp_move_rate(0)) / _params.pos_p(0);
 		_pos_sp(1) = _pos(1) + (_vel(1) - _att_sp.R_body[1][2] * _att_sp.thrust / _params.vel_p(1)
 				- _params.vel_ff(1) * _sp_move_rate(1)) / _params.pos_p(1);
-		mavlink_log_info(_mavlink_fd, "[mpc] reset pos sp: %d, %d", (int)_pos_sp(0), (int)_pos_sp(1));
+		//mavlink_log_info(_mavlink_fd, "[mpc] reset pos sp: %d, %d", (int)_pos_sp(0), (int)_pos_sp(1));
+		mavlink_log_info(_mavlink_fd, "[mpc] reset pos sp: %.3f, %.3f", (double)_pos_sp(0), (double)_pos_sp(1));
 	}
 }
 
@@ -644,6 +654,7 @@ MulticopterPositionControl::control_manual(float dt)
 		pos_sp_offs /= pos_sp_offs_norm;
 		_pos_sp = _pos + pos_sp_offs.emult(_params.sp_offs_max);
 	}
+
 }
 
 void
@@ -887,7 +898,7 @@ MulticopterPositionControl::task_main()
 	_manual_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 	_arming_sub = orb_subscribe(ORB_ID(actuator_armed));
 	_local_pos_sub = orb_subscribe(ORB_ID(vehicle_local_position));
-	_vicon_position_sub = orb_subscribe(ORB_ID(vicon_local_position));
+	_vicon_position_sub = orb_subscribe(ORB_ID(vehicle_vicon_position));
 	_pos_sp_triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
 	_local_pos_sp_sub = orb_subscribe(ORB_ID(vehicle_local_position_setpoint));
 	_global_vel_sp_sub = orb_subscribe(ORB_ID(vehicle_global_velocity_setpoint));
@@ -958,20 +969,15 @@ MulticopterPositionControl::task_main()
 		    _control_mode.flag_control_climb_rate_enabled ||
 		    _control_mode.flag_control_velocity_enabled) {
 
-			if(viconValid)
-			{
 
-			}
-			else
-			{
-				_pos(0) = _local_pos.x;
-				_pos(1) = _local_pos.y;
-				_pos(2) = _local_pos.z;
+			_pos(0) = _local_pos.x;
+			_pos(1) = _local_pos.y;
+			_pos(2) = _local_pos.z;
 
-				_vel(0) = _local_pos.vx;
-				_vel(1) = _local_pos.vy;
-				_vel(2) = _local_pos.vz;
-			}
+			_vel(0) = _local_pos.vx;
+			_vel(1) = _local_pos.vy;
+			_vel(2) = _local_pos.vz;
+
 
 			_vel_ff.zero();
 			_sp_move_rate.zero();
@@ -993,6 +999,11 @@ MulticopterPositionControl::task_main()
 			}
 
 			/* fill local position setpoint */
+			// DEBUG -- HARD-CODE SET-POINT
+			_pos_sp(0) = 0;
+			_pos_sp(1) = 0;
+			//_pos_sp(2) = -1;
+
 			_local_pos_sp.timestamp = hrt_absolute_time();
 			_local_pos_sp.x = _pos_sp(0);
 			_local_pos_sp.y = _pos_sp(1);
