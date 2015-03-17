@@ -53,15 +53,22 @@
  * Fused local position in NED.
  */
 struct vehicle_vicon_position_s {
-	uint64_t timestamp;			/**< time of this estimate, in microseconds since system start */
-	bool valid;				/**< true if position satisfies validity criteria of estimator */
-
-	float x;				/**< X positin in meters in NED earth-fixed frame */
-	float y;				/**< X positin in meters in NED earth-fixed frame */
-	float z;				/**< Z positin in meters in NED earth-fixed frame (negative altitude) */
+	uint64_t timestamp;		/**< time of this estimate, in microseconds since system start */
+	bool xy_valid;			/**< true if x and y are valid */
+	bool z_valid;			/**< true if z is valid */
+	bool v_xy_valid;		/**< true if vy and vy are valid */
+	bool v_z_valid;			/**< true if vz is valid */
+	float x;				/**< X position in meters in NED earth-fixed frame */
+	float y;				/**< X position in meters in NED earth-fixed frame */
+	float z;				/**< Z position in meters in NED earth-fixed frame (negative altitude) */
+	float vx;				/**< X Velocity in meters/sec in NED */
+	float vy;				/**< Y Velocity in meters/sec in NED */
+	float vz;				/**< Z Velocity in meters/sec in NED */
 	float roll;
 	float pitch;
-	float yaw;
+	float yaw;				/**< Rotation in NED, -PI .. PI */
+	float eph;
+	float epv;
 
 	// TODO Add covariances here
 

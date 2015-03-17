@@ -65,6 +65,7 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/vehicle_vicon_position.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/actuator_armed.h>
@@ -114,6 +115,7 @@ private:
 	int		_control_task;			/**< task handle */
 
 	int		_v_att_sub;				/**< vehicle attitude subscription */
+	int		_v_vicon_sub;			/**< vehicle vicon subscription */
 	int		_v_att_sp_sub;			/**< vehicle attitude setpoint subscription */
 	int		_v_rates_sp_sub;		/**< vehicle rates setpoint subscription */
 	int		_v_control_mode_sub;	/**< vehicle control mode subscription */
@@ -132,6 +134,7 @@ private:
 	bool		_actuators_0_circuit_breaker_enabled;	/**< circuit breaker to suppress output */
 
 	struct vehicle_attitude_s			_v_att;				/**< vehicle attitude */
+	struct vehicle_vicon_position_s		_v_vicon_pos;		/**< vehicle vicon pos */
 	struct vehicle_attitude_setpoint_s	_v_att_sp;			/**< vehicle attitude setpoint */
 	struct vehicle_rates_setpoint_s		_v_rates_sp;		/**< vehicle rates setpoint */
 	struct manual_control_setpoint_s	_manual_control_sp;	/**< manual control setpoint */
@@ -273,6 +276,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 
 /* subscriptions */
 	_v_att_sub(-1),
+	_v_vicon_sub(-1),
 	_v_att_sp_sub(-1),
 	_v_control_mode_sub(-1),
 	_params_sub(-1),
@@ -770,6 +774,7 @@ MulticopterAttitudeControl::task_main()
 	_v_att_sp_sub = orb_subscribe(ORB_ID(vehicle_attitude_setpoint));
 	_v_rates_sp_sub = orb_subscribe(ORB_ID(vehicle_rates_setpoint));
 	_v_att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
+	_v_vicon_sub = orb_subscribe(ORB_ID(vehicle_vicon_position));
 	_v_control_mode_sub = orb_subscribe(ORB_ID(vehicle_control_mode));
 	_params_sub = orb_subscribe(ORB_ID(parameter_update));
 	_manual_control_sp_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
@@ -820,6 +825,10 @@ MulticopterAttitudeControl::task_main()
 
 			/* copy attitude topic */
 			orb_copy(ORB_ID(vehicle_attitude), _v_att_sub, &_v_att);
+
+			/* copy vicon topic */
+			orb_copy(ORB_ID(vehicle_vicon_position), _v_vicon_sub, &_v_vicon_pos);
+			_v_att.yaw = _v_vicon_pos.yaw;
 
 			/* check for updates in other topics */
 			parameter_update_poll();

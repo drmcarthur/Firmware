@@ -490,9 +490,18 @@ MulticopterPositionControl::poll_subscriptions()
 		_local_pos.x = _vicon_pos.x;
 		_local_pos.y = _vicon_pos.y;
 		_local_pos.z = _vicon_pos.z;
+		_local_pos.xy_valid = _vicon_pos.xy_valid;
+		_local_pos.z_valid  = _vicon_pos.z_valid;
+		_local_pos.vx = _vicon_pos.vx;
+		_local_pos.vy = _vicon_pos.vy;
+		_local_pos.vz = _vicon_pos.vz;
+		_local_pos.v_xy_valid = _vicon_pos.v_xy_valid;
+		_local_pos.v_z_valid = _vicon_pos.v_z_valid;
 		_local_pos.yaw = _vicon_pos.yaw;
-		_local_pos.xy_valid = true;			/**< true if x and y are valid */
-		_local_pos.z_valid  = true;			/**< true if z is valid */
+		_local_pos.eph = _vicon_pos.eph;
+		_local_pos.epv = _vicon_pos.epv;
+		_att.yaw = _vicon_pos.yaw;
+
 	}
 }
 
