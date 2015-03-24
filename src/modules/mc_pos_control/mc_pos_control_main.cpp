@@ -1011,7 +1011,7 @@ MulticopterPositionControl::task_main()
 			// DEBUG -- HARD-CODE SET-POINT
 			_pos_sp(0) = 0;
 			_pos_sp(1) = 0;
-			//_pos_sp(2) = -1;
+			_pos_sp(2) = -1;	// 1 meter ABOVE ground (NED frame)
 
 			_local_pos_sp.timestamp = hrt_absolute_time();
 			_local_pos_sp.x = _pos_sp(0);
